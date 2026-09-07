@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm create:*)",
+      "Bash(cp -r /c/agusapp/neuroestima-temp/* /c/agusapp/)",
+      "Bash(cp /c/agusapp/neuroestima-temp/.gitignore /c/agusapp/)",
+      "Bash(rm -rf /c/agusapp/neuroestima-temp)",
+      "Bash(npm install:*)",
+      "Bash(npx vite:*)",
+      "Bash(git init:*)",
+      "Bash(git branch:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)",
+      "Bash(npx supabase:*)"
+    ]
+  }
+}

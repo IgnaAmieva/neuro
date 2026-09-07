@@ -12,38 +12,22 @@ export default function PacienteNuevo() {
     setError(null)
     setGuardando(true)
 
-    const { data: paciente, error: insertErr } = await supabase
-      .from('pacientes')
-      .insert({
-        nombre: form.nombre,
-        fecha_nacimiento: form.fecha_nacimiento,
-        diagnostico: form.diagnostico || null,
-        notas_generales: form.notas_generales || null,
-        activo: form.activo,
-      })
-      .select('id')
-      .single()
+    const { data: paciente, error: rpcErr } = await supabase.rpc(
+      'crear_paciente_con_equipo',
+      {
+        p_nombre: form.nombre,
+        p_fecha_nacimiento: form.fecha_nacimiento,
+        p_diagnostico: form.diagnostico || null,
+        p_notas_generales: form.notas_generales || null,
+        p_activo: form.activo,
+        p_equipo_ids: equipoIds,
+      },
+    )
 
-    if (insertErr) {
-      setError('Error al crear paciente: ' + insertErr.message)
+    if (rpcErr) {
+      setError('Error al crear paciente: ' + rpcErr.message)
       setGuardando(false)
       return
-    }
-
-    // Assign team
-    if (equipoIds.length > 0) {
-      const { error: assignErr } = await supabase
-        .from('paciente_profesional')
-        .insert(equipoIds.map((profId) => ({
-          paciente_id: paciente.id,
-          profesional_id: profId,
-        })))
-
-      if (assignErr) {
-        setError('Paciente creado pero error al asignar equipo: ' + assignErr.message)
-        setGuardando(false)
-        return
-      }
     }
 
     navigate(`/pacientes/${paciente.id}`, { replace: true })

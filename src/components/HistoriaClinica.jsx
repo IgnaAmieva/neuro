@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../hooks/useAuth.js'
-import { especialidadColor, tipoSesionLabel } from '../lib/especialidades.js'
+import { especialidadColor, tipoSesionLabel, tiposSesion } from '../lib/especialidades.js'
 import EntradaForm from './EntradaForm.jsx'
 import GenerarInforme from './GenerarInforme.jsx'
 
@@ -15,6 +15,7 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
   const [error, setError] = useState(null)
   const [confirmDelete, setConfirmDelete] = useState(null)
   const [periodo, setPeriodo] = useState('3m')
+  const [areasSeleccionadas, setAreasSeleccionadas] = useState(() => tiposSesion.map((t) => t.value))
   const [showInforme, setShowInforme] = useState(false)
 
   useEffect(() => {
@@ -99,13 +100,34 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
   ]
 
   const filtradas = useMemo(() => {
+    let resultado = entradas
+    // Filter by period
     const p = periodos.find((x) => x.key === periodo)
-    if (!p || !p.days) return entradas
-    const desde = new Date()
-    desde.setDate(desde.getDate() - p.days)
-    desde.setHours(0, 0, 0, 0)
-    return entradas.filter((e) => new Date(e.fecha) >= desde)
-  }, [entradas, periodo])
+    if (p && p.days) {
+      const desde = new Date()
+      desde.setDate(desde.getDate() - p.days)
+      desde.setHours(0, 0, 0, 0)
+      resultado = resultado.filter((e) => new Date(e.fecha) >= desde)
+    }
+    // Filter by area
+    if (areasSeleccionadas.length < tiposSesion.length) {
+      resultado = resultado.filter((e) => areasSeleccionadas.includes(e.tipo_sesion))
+    }
+    return resultado
+  }, [entradas, periodo, areasSeleccionadas])
+
+  function toggleArea(value) {
+    setAreasSeleccionadas((prev) => {
+      if (prev.includes(value)) {
+        // Don't allow deselecting all
+        if (prev.length === 1) return prev
+        return prev.filter((a) => a !== value)
+      }
+      return [...prev, value]
+    })
+  }
+
+  const todasSeleccionadas = areasSeleccionadas.length === tiposSesion.length
 
   const isOwn = (entrada) => entrada.profesional_id === profesional?.id
 
@@ -113,7 +135,7 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
     <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
         <h3 className="text-sm font-medium text-sage-500 uppercase tracking-wider">
-          Historia clínica ({filtradas.length}{periodo !== 'todo' ? ` de ${entradas.length}` : ''})
+          Historia clínica ({filtradas.length}{filtradas.length !== entradas.length ? ` de ${entradas.length}` : ''})
         </h3>
         {!showForm && !editando && (
           <div className="flex items-center gap-2">
@@ -141,21 +163,58 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
         )}
       </div>
 
-      {/* Period filter */}
-      <div className="flex rounded-lg border border-sage-300 overflow-hidden text-xs mb-5 w-fit">
-        {periodos.map((p) => (
+      {/* Filters */}
+      <div className="flex flex-col gap-3 mb-5">
+        {/* Period filter */}
+        <div className="flex rounded-lg border border-sage-300 overflow-hidden text-xs w-fit">
+          {periodos.map((p) => (
+            <button
+              key={p.key}
+              onClick={() => setPeriodo(p.key)}
+              className={`px-3 py-1.5 transition-colors cursor-pointer ${
+                periodo === p.key
+                  ? 'bg-teal-600 text-white'
+                  : 'bg-white text-sage-600 hover:bg-sage-100'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Area filter */}
+        <div className="flex flex-wrap items-center gap-2">
           <button
-            key={p.key}
-            onClick={() => setPeriodo(p.key)}
-            className={`px-3 py-1.5 transition-colors cursor-pointer ${
-              periodo === p.key
-                ? 'bg-teal-600 text-white'
-                : 'bg-white text-sage-600 hover:bg-sage-100'
+            onClick={() =>
+              setAreasSeleccionadas(
+                todasSeleccionadas ? [tiposSesion[0].value] : tiposSesion.map((t) => t.value),
+              )
+            }
+            className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
+              todasSeleccionadas
+                ? 'bg-sage-800 text-white border-sage-800'
+                : 'bg-white text-sage-500 border-sage-300 hover:border-sage-400'
             }`}
           >
-            {p.label}
+            Todas
           </button>
-        ))}
+          {tiposSesion.map((t) => {
+            const activa = areasSeleccionadas.includes(t.value)
+            return (
+              <button
+                key={t.value}
+                onClick={() => toggleArea(t.value)}
+                className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
+                  activa
+                    ? (especialidadColor[t.value] || 'bg-sage-100 text-sage-700') + ' border-transparent'
+                    : 'bg-white text-sage-400 border-sage-200 hover:border-sage-300'
+                }`}
+              >
+                {t.short}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       {error && (
@@ -196,7 +255,7 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
         <div className="text-center py-12 text-sage-400 text-sm">
           {entradas.length === 0
             ? 'No hay entradas registradas aún.'
-            : 'No hay entradas en este período.'}
+            : 'No hay entradas con los filtros seleccionados.'}
         </div>
       ) : (
         <div className="space-y-4">
@@ -298,7 +357,7 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
       {showInforme && paciente && (
         <GenerarInforme
           paciente={paciente}
-          entradas={entradas}
+          entradas={filtradas}
           onClose={() => setShowInforme(false)}
         />
       )}

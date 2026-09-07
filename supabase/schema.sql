@@ -74,6 +74,11 @@ create table objetivos (
   fecha_inicio date not null default current_date,
   estado text not null default 'en progreso'
     check (estado in ('en progreso','logrado','pausado')),
+  area text
+    check (area in (
+      'psicopedagogía','psicología','fonoaudiología',
+      'terapia ocupacional','kinesiología'
+    )),
   creado_por uuid not null references profesionales(id) on delete restrict,
   created_at timestamptz not null default now()
 );
@@ -99,6 +104,7 @@ create index idx_entradas_paciente on entradas_historia_clinica(paciente_id);
 create index idx_entradas_profesional on entradas_historia_clinica(profesional_id);
 create index idx_objetivos_paciente on objetivos(paciente_id);
 create index idx_paciente_profesional_prof on paciente_profesional(profesional_id);
+create index idx_objetivos_area on objetivos(area);
 create index idx_objetivo_historial_objetivo on objetivo_historial(objetivo_id);
 
 -- =============================================================

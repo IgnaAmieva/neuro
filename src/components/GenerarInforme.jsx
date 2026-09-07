@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../hooks/useAuth.js'
-import { tipoSesionLabel } from '../lib/especialidades.js'
+import { tipoSesionLabel, tiposSesion, especialidadColor } from '../lib/especialidades.js'
 
 const periodos = [
   { key: '1s', label: '1 semana', days: 7 },
@@ -16,18 +16,45 @@ export default function GenerarInforme({ paciente, entradas, onClose }) {
   const { profesional } = useAuth()
   const [paso, setPaso] = useState('config') // config | generando | editor
   const [periodoInforme, setPeriodoInforme] = useState('3m')
+  const [areasInforme, setAreasInforme] = useState(() => tiposSesion.map((t) => t.value))
   const [destinatario, setDestinatario] = useState('')
   const [informe, setInforme] = useState('')
   const [error, setError] = useState(null)
 
   const entradasFiltradas = useMemo(() => {
+    let resultado = entradas
     const p = periodos.find((x) => x.key === periodoInforme)
-    if (!p || !p.days) return entradas
-    const desde = new Date()
-    desde.setDate(desde.getDate() - p.days)
-    desde.setHours(0, 0, 0, 0)
-    return entradas.filter((e) => new Date(e.fecha) >= desde)
-  }, [entradas, periodoInforme])
+    if (p && p.days) {
+      const desde = new Date()
+      desde.setDate(desde.getDate() - p.days)
+      desde.setHours(0, 0, 0, 0)
+      resultado = resultado.filter((e) => new Date(e.fecha) >= desde)
+    }
+    if (areasInforme.length < tiposSesion.length) {
+      resultado = resultado.filter((e) => areasInforme.includes(e.tipo_sesion))
+    }
+    return resultado
+  }, [entradas, periodoInforme, areasInforme])
+
+  const todasAreasSeleccionadas = areasInforme.length === tiposSesion.length
+
+  function toggleAreaInforme(value) {
+    setAreasInforme((prev) => {
+      if (prev.includes(value)) {
+        if (prev.length === 1) return prev
+        return prev.filter((a) => a !== value)
+      }
+      return [...prev, value]
+    })
+  }
+
+  function filtroResumen() {
+    const periodoLabel = periodos.find((p) => p.key === periodoInforme)?.label || ''
+    const areasLabel = todasAreasSeleccionadas
+      ? 'todas las áreas'
+      : areasInforme.map((a) => tipoSesionLabel[a] || a).join(', ')
+    return `${periodoLabel} · ${areasLabel}`
+  }
 
   function fechaRango() {
     if (entradasFiltradas.length === 0) return 'Sin entradas'
@@ -153,7 +180,7 @@ export default function GenerarInforme({ paciente, entradas, onClose }) {
       writeLines(`Diagnóstico: ${paciente.diagnostico}`, 9, { color: [110, 127, 96] })
     }
     y += 3
-    writeLines(`Período del informe: ${fechaRango()} — ${entradasFiltradas.length} entradas`, 8, { color: [141, 155, 128] })
+    writeLines(`Filtro: ${filtroResumen()} — ${fechaRango()} — ${entradasFiltradas.length} entradas`, 8, { color: [141, 155, 128] })
     if (destinatario.trim()) {
       writeLines(`Destinatario: ${destinatario}`, 8, { color: [141, 155, 128] })
     }
@@ -297,6 +324,44 @@ export default function GenerarInforme({ paciente, entradas, onClose }) {
               </div>
 
               <div>
+                <label className="block text-sm font-medium text-sage-700 mb-2">
+                  Áreas a incluir
+                </label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setAreasInforme(
+                        todasAreasSeleccionadas ? [tiposSesion[0].value] : tiposSesion.map((t) => t.value),
+                      )
+                    }
+                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
+                      todasAreasSeleccionadas
+                        ? 'bg-sage-800 text-white border-sage-800'
+                        : 'bg-white text-sage-500 border-sage-300 hover:border-sage-400'
+                    }`}
+                  >
+                    Todas
+                  </button>
+                  {tiposSesion.map((t) => {
+                    const activa = areasInforme.includes(t.value)
+                    return (
+                      <button
+                        key={t.value}
+                        onClick={() => toggleAreaInforme(t.value)}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors cursor-pointer ${
+                          activa
+                            ? (especialidadColor[t.value] || 'bg-sage-100 text-sage-700') + ' border-transparent'
+                            : 'bg-white text-sage-400 border-sage-200 hover:border-sage-300'
+                        }`}
+                      >
+                        {t.short}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div>
                 <label htmlFor="destinatario" className="block text-sm font-medium text-sage-700 mb-1.5">
                   Destinatario del informe <span className="text-sage-400 font-normal">(opcional)</span>
                 </label>
@@ -344,6 +409,9 @@ export default function GenerarInforme({ paciente, entradas, onClose }) {
                 <p className="text-sage-400 text-sm mt-1">
                   Analizando {entradasFiltradas.length} entradas con IA
                 </p>
+                <p className="text-sage-400 text-xs mt-0.5">
+                  {filtroResumen()}
+                </p>
               </div>
             </div>
           )}
@@ -356,7 +424,7 @@ export default function GenerarInforme({ paciente, entradas, onClose }) {
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 16v-4M12 8h.01" />
                 </svg>
-                Revisá y editá el informe antes de descargarlo. El PDF incluirá las entradas como respaldo.
+                {filtroResumen()} · {entradasFiltradas.length} entradas · Revisá y editá antes de descargar.
               </div>
 
               <textarea
