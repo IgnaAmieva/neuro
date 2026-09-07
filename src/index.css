@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+@theme {
+  /* Paleta Neuroestima — verdes salvia + tierra + acentos teal */
+  --color-sage-50: #f6f7f5;
+  --color-sage-100: #e8ebe5;
+  --color-sage-200: #d1d7cb;
+  --color-sage-300: #b0baa6;
+  --color-sage-400: #8d9b80;
+  --color-sage-500: #6e7f60;
+  --color-sage-600: #57664b;
+  --color-sage-700: #44513c;
+  --color-sage-800: #394233;
+  --color-sage-900: #2f362b;
+  --color-sage-950: #1a1e17;
+
+  --color-teal-50: #f0f9f7;
+  --color-teal-100: #d4ede8;
+  --color-teal-200: #a9dbd2;
+  --color-teal-300: #76c2b6;
+  --color-teal-400: #4ea69a;
+  --color-teal-500: #368b80;
+  --color-teal-600: #2a6f67;
+  --color-teal-700: #255a54;
+  --color-teal-800: #214945;
+  --color-teal-900: #1f3d3a;
+  --color-teal-950: #0d2322;
+
+  --color-warm-50: #faf8f5;
+  --color-warm-100: #f0ece4;
+  --color-warm-200: #e2dace;
+  --color-warm-300: #cfc3b0;
+  --color-warm-400: #b8a68e;
+  --color-warm-500: #a89074;
+  --color-warm-600: #9a7f66;
+  --color-warm-700: #806856;
+  --color-warm-800: #695649;
+  --color-warm-900: #574840;
+
+  --color-clay-500: #c4785a;
+  --color-clay-600: #b0674a;
+
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-display: 'Playfair Display', Georgia, serif;
+}
+
+body {
+  background-color: var(--color-sage-50);
+  color: var(--color-sage-900);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
