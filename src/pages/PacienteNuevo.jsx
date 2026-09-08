@@ -25,7 +25,7 @@ export default function PacienteNuevo() {
     )
 
     if (rpcErr) {
-      setError('Error al crear paciente: ' + rpcErr.message)
+      setError('No se pudo crear el paciente. Verificá los datos e intentá de nuevo.')
       setGuardando(false)
       return
     }

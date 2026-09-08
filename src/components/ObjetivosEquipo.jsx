@@ -45,11 +45,15 @@ export default function ObjetivosEquipo({ pacienteId }) {
 
   async function loadObjetivos() {
     setLoading(true)
-    const { data } = await supabase
+    setError(null)
+    const { data, error: queryErr } = await supabase
       .from('objetivos')
       .select('*, creador:profesionales!creado_por ( id, nombre, especialidad )')
       .eq('paciente_id', pacienteId)
       .order('created_at', { ascending: false })
+    if (queryErr) {
+      setError('No se pudieron cargar los objetivos.')
+    }
     setObjetivos(data || [])
     setLoading(false)
   }
@@ -59,11 +63,15 @@ export default function ObjetivosEquipo({ pacienteId }) {
       setExpandedId(expandedId === objetivoId ? null : objetivoId)
       return
     }
-    const { data } = await supabase
+    const { data, error: histErr } = await supabase
       .from('objetivo_historial')
       .select('*, profesional:profesionales!cambiado_por ( id, nombre )')
       .eq('objetivo_id', objetivoId)
       .order('fecha', { ascending: false })
+    if (histErr) {
+      setError('No se pudo cargar el historial de cambios.')
+      return
+    }
     setHistorial((h) => ({ ...h, [objetivoId]: data || [] }))
     setExpandedId(objetivoId)
   }
@@ -98,7 +106,7 @@ export default function ObjetivosEquipo({ pacienteId }) {
         })
         .eq('id', editingCell.objetivo.id)
       if (err) {
-        setError('Error al actualizar: ' + err.message)
+        setError('No se pudo actualizar el objetivo. Intentá de nuevo.')
         setGuardando(false)
         return
       }
@@ -115,7 +123,7 @@ export default function ObjetivosEquipo({ pacienteId }) {
           creado_por: profesional.id,
         })
       if (err) {
-        setError('Error al crear objetivo: ' + err.message)
+        setError('No se pudo crear el objetivo. Intentá de nuevo.')
         setGuardando(false)
         return
       }
@@ -135,16 +143,19 @@ export default function ObjetivosEquipo({ pacienteId }) {
       .update({ estado: nuevoEstado })
       .eq('id', objetivo.id)
     if (updErr) {
-      setError('Error al actualizar estado: ' + updErr.message)
+      setError('No se pudo cambiar el estado del objetivo.')
       return
     }
 
-    await supabase.from('objetivo_historial').insert({
+    const { error: histErr } = await supabase.from('objetivo_historial').insert({
       objetivo_id: objetivo.id,
       estado_anterior: estadoAnterior,
       estado_nuevo: nuevoEstado,
       cambiado_por: profesional.id,
     })
+    if (histErr) {
+      setError('El estado se actualizó pero no se pudo registrar en el historial.')
+    }
 
     if (expandedId === objetivo.id) {
       setHistorial((h) => ({ ...h, [objetivo.id]: undefined }))

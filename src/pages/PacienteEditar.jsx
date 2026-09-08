@@ -18,13 +18,19 @@ export default function PacienteEditar() {
 
   async function loadData() {
     setLoading(true)
-    const [{ data: pac }, { data: team }] = await Promise.all([
+    setError(null)
+    const [{ data: pac, error: pacErr }, { data: team }] = await Promise.all([
       supabase.from('pacientes').select('*').eq('id', id).single(),
       supabase
         .from('paciente_profesional')
         .select('profesional:profesionales ( id, nombre, especialidad )')
         .eq('paciente_id', id),
     ])
+    if (pacErr) {
+      setError('No se pudo cargar el paciente.')
+      setLoading(false)
+      return
+    }
     setPaciente(pac)
     setEquipo(team?.map((t) => t.profesional) || [])
     setLoading(false)
@@ -47,7 +53,7 @@ export default function PacienteEditar() {
       .eq('id', id)
 
     if (updateErr) {
-      setError('Error al actualizar: ' + updateErr.message)
+      setError('No se pudieron guardar los cambios. Intentá de nuevo.')
       setGuardando(false)
       return
     }
@@ -65,7 +71,7 @@ export default function PacienteEditar() {
         .in('profesional_id', toRemove)
 
       if (delErr) {
-        setError('Error al quitar profesionales: ' + delErr.message)
+        setError('No se pudieron quitar profesionales del equipo.')
         setGuardando(false)
         return
       }
@@ -80,7 +86,7 @@ export default function PacienteEditar() {
         })))
 
       if (addErr) {
-        setError('Error al asignar profesionales: ' + addErr.message)
+        setError('No se pudieron asignar los profesionales nuevos.')
         setGuardando(false)
         return
       }

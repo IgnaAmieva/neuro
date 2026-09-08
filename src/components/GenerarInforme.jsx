@@ -109,13 +109,19 @@ export default function GenerarInforme({ paciente, entradas, onClose }) {
         { body: payload },
       )
 
-      if (fnErr) throw new Error(fnErr.message)
+      if (fnErr) {
+        // On non-2xx, supabase-js may put the parsed body in fnErr.context
+        const serverMsg = typeof fnErr.context?.json === 'function'
+          ? (await fnErr.context.json())?.error
+          : null
+        throw new Error(serverMsg || fnErr.message)
+      }
       if (data?.error) throw new Error(data.error)
 
       setInforme(data.informe)
       setPaso('editor')
     } catch (err) {
-      setError('Error al generar informe: ' + err.message)
+      setError(err.message)
       setPaso('config')
     }
   }

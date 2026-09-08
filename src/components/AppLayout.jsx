@@ -7,6 +7,10 @@ const navItems = [
   { to: '/pacientes', label: 'Pacientes' },
 ]
 
+const adminNavItems = [
+  { to: '/respaldos', label: 'Respaldos' },
+]
+
 export default function AppLayout() {
   const { profesional, signOut } = useAuth()
 
@@ -57,6 +61,21 @@ export default function AppLayout() {
                 key={item.to}
                 to={item.to}
                 end={item.end}
+                className={({ isActive }) =>
+                  `px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                    isActive
+                      ? 'border-teal-600 text-teal-700'
+                      : 'border-transparent text-sage-500 hover:text-sage-700 hover:border-sage-300'
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+            {profesional?.rol === 'admin' && adminNavItems.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
                 className={({ isActive }) =>
                   `px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
                     isActive

@@ -8,6 +8,7 @@ export default function Pacientes() {
   const { profesional } = useAuth()
   const [pacientes, setPacientes] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [busqueda, setBusqueda] = useState('')
   const [filtroActivo, setFiltroActivo] = useState('activos')
 
@@ -18,8 +19,8 @@ export default function Pacientes() {
 
   async function loadPacientes() {
     setLoading(true)
-    // Get patient IDs assigned to this professional, then fetch patient + full team
-    const { data, error } = await supabase
+    setError(null)
+    const { data, error: queryErr } = await supabase
       .from('paciente_profesional')
       .select(`
         paciente:pacientes (
@@ -31,15 +32,18 @@ export default function Pacientes() {
       `)
       .eq('profesional_id', profesional.id)
 
-    if (!error && data) {
-      const mapped = data.map((row) => ({
-        ...row.paciente,
-        equipo: row.paciente.paciente_profesional.map((pp) => pp.profesional),
-      }))
-      // Deduplicate by id (shouldn't happen but safe)
-      const unique = [...new Map(mapped.map((p) => [p.id, p])).values()]
-      setPacientes(unique)
+    if (queryErr) {
+      setError('No se pudieron cargar los pacientes. Intentá de nuevo en unos segundos.')
+      setLoading(false)
+      return
     }
+
+    const mapped = (data || []).map((row) => ({
+      ...row.paciente,
+      equipo: row.paciente.paciente_profesional.map((pp) => pp.profesional),
+    }))
+    const unique = [...new Map(mapped.map((p) => [p.id, p])).values()]
+    setPacientes(unique)
     setLoading(false)
   }
 
@@ -131,6 +135,12 @@ export default function Pacientes() {
           ))}
         </div>
       </div>
+
+      {error && (
+        <div className="mb-6 p-3 rounded-lg bg-clay-500/10 border border-clay-500/20 text-clay-600 text-sm">
+          {error}
+        </div>
+      )}
 
       {/* List */}
       {filtrados.length === 0 ? (

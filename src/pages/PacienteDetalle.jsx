@@ -10,6 +10,7 @@ export default function PacienteDetalle() {
   const [paciente, setPaciente] = useState(null)
   const [equipo, setEquipo] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [tab, setTab] = useState('historia')
 
   useEffect(() => {
@@ -18,13 +19,22 @@ export default function PacienteDetalle() {
 
   async function loadPaciente() {
     setLoading(true)
-    const [{ data: pac }, { data: team }] = await Promise.all([
+    setError(null)
+    const [{ data: pac, error: pacErr }, { data: team, error: teamErr }] = await Promise.all([
       supabase.from('pacientes').select('*').eq('id', id).single(),
       supabase
         .from('paciente_profesional')
         .select('profesional:profesionales ( id, nombre, especialidad, email )')
         .eq('paciente_id', id),
     ])
+    if (pacErr) {
+      setError('No se pudo cargar el paciente. Verificá tu conexión e intentá de nuevo.')
+      setLoading(false)
+      return
+    }
+    if (teamErr) {
+      setError('No se pudo cargar el equipo del paciente.')
+    }
     setPaciente(pac)
     setEquipo(team?.map((t) => t.profesional) || [])
     setLoading(false)
@@ -58,7 +68,7 @@ export default function PacienteDetalle() {
   if (!paciente) {
     return (
       <div className="text-center py-20 text-sage-500">
-        Paciente no encontrado.
+        {error || 'Paciente no encontrado.'}
         <br />
         <Link to="/pacientes" className="text-teal-600 hover:text-teal-700 text-sm mt-2 inline-block">
           Volver al listado
@@ -69,6 +79,12 @@ export default function PacienteDetalle() {
 
   return (
     <div>
+      {error && (
+        <div className="mb-4 p-3 rounded-lg bg-clay-500/10 border border-clay-500/20 text-clay-600 text-sm">
+          {error}
+        </div>
+      )}
+
       {/* Breadcrumb + actions */}
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2 text-sm text-sage-500">

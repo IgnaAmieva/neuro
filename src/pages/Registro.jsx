@@ -36,7 +36,14 @@ export default function Registro() {
     })
 
     if (authError) {
-      setError(authError.message)
+      const msg = authError.message?.toLowerCase() || ''
+      if (msg.includes('already registered') || msg.includes('already been registered')) {
+        setError('Este email ya está registrado. Probá iniciar sesión.')
+      } else if (msg.includes('password')) {
+        setError('La contraseña debe tener al menos 6 caracteres.')
+      } else {
+        setError('Error al crear la cuenta. Verificá los datos e intentá de nuevo.')
+      }
       setLoading(false)
       return
     }
@@ -50,7 +57,12 @@ export default function Registro() {
     })
 
     if (profError) {
-      setError('Error al crear el profesional: ' + profError.message)
+      const msg = profError.message?.toLowerCase() || ''
+      if (msg.includes('unique') || msg.includes('duplicate')) {
+        setError('Ya existe un profesional con este email.')
+      } else {
+        setError('Error al registrar el perfil profesional. Contactá al administrador.')
+      }
       setLoading(false)
       return
     }

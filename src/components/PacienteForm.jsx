@@ -16,14 +16,19 @@ export default function PacienteForm({ paciente, equipoInicial, onSave, guardand
     equipoInicial?.map((p) => p.id) || (profesional ? [profesional.id] : [])
   )
   const [todosProfs, setTodosProfs] = useState([])
+  const [loadError, setLoadError] = useState(null)
 
   useEffect(() => {
     supabase
       .from('profesionales')
       .select('id, nombre, especialidad')
       .order('nombre')
-      .then(({ data }) => {
-        if (data) setTodosProfs(data)
+      .then(({ data, error }) => {
+        if (error) {
+          setLoadError('No se pudo cargar la lista de profesionales.')
+        } else {
+          setTodosProfs(data || [])
+        }
       })
   }, [])
 
@@ -136,7 +141,9 @@ export default function PacienteForm({ paciente, equipoInicial, onSave, guardand
         <p className="text-xs text-sage-400 mb-5">
           Seleccioná los profesionales que trabajarán con este paciente.
         </p>
-        {todosProfs.length === 0 ? (
+        {loadError ? (
+          <p className="text-clay-600 text-sm">{loadError}</p>
+        ) : todosProfs.length === 0 ? (
           <p className="text-sage-400 text-sm italic">Cargando profesionales...</p>
         ) : (
           <div className="grid sm:grid-cols-2 gap-2">

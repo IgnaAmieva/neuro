@@ -24,11 +24,15 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
 
   async function loadEntradas() {
     setLoading(true)
-    const { data } = await supabase
+    setError(null)
+    const { data, error: queryErr } = await supabase
       .from('entradas_historia_clinica')
       .select('*, profesional:profesionales ( id, nombre, especialidad )')
       .eq('paciente_id', pacienteId)
       .order('fecha', { ascending: false })
+    if (queryErr) {
+      setError('No se pudieron cargar las entradas de historia clínica.')
+    }
     setEntradas(data || [])
     setLoading(false)
   }
@@ -45,7 +49,7 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
       })
     setGuardando(false)
     if (err) {
-      setError('Error al cargar entrada: ' + err.message)
+      setError('No se pudo guardar la entrada. Intentá de nuevo.')
       return
     }
     setShowForm(false)
@@ -61,7 +65,7 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
       .eq('id', editando.id)
     setGuardando(false)
     if (err) {
-      setError('Error al actualizar: ' + err.message)
+      setError('No se pudo actualizar la entrada. Intentá de nuevo.')
       return
     }
     setEditando(null)
@@ -75,7 +79,7 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
       .eq('id', entradaId)
     setConfirmDelete(null)
     if (err) {
-      setError('Error al eliminar: ' + err.message)
+      setError('No se pudo eliminar la entrada.')
       return
     }
     loadEntradas()
