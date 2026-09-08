@@ -52,6 +52,10 @@ Las migraciones están en `supabase/migrations/` y se ejecutan en orden:
 
 1. `20240101000000_create_tables.sql` — Tablas e índices
 2. `20240101000001_row_level_security.sql` — RLS y políticas de seguridad
+3. `20240102000000_add_area_to_objetivos.sql` — Columna area en objetivos
+4. `20240103000000_rpc_crear_paciente_con_equipo.sql` — RPC para creación atómica de paciente + equipo
+5. `20240104000000_storage_respaldos.sql` — Bucket de respaldos + Storage RLS + cron
+6. `20240105000000_rate_limit_informes.sql` — Rate limiting para generación de informes
 
 ### Aplicar migraciones
 
@@ -113,6 +117,43 @@ git push origin dev
 # Vercel genera un preview → revisar → merge a main cuando esté listo
 ```
 
+## Monitoreo y logs
+
+### Frontend — Vercel Dashboard
+
+- **Analytics**: [vercel.com/dashboard](https://vercel.com/dashboard) > tu proyecto > Analytics. Muestra visitas, páginas más vistas, dispositivos, y Core Web Vitals. Se activa automáticamente con `@vercel/analytics` (ya integrado en `main.jsx`).
+- **Deployments**: pestaña Deployments — historial de deploys, logs de build, preview URLs.
+- **Logs en tiempo real**: pestaña Logs (Observability) — requests al frontend, errores del lado del cliente.
+
+### Base de datos — Supabase Dashboard
+
+- **Tabla de datos**: [supabase.com/dashboard](https://supabase.com/dashboard) > tu proyecto > Table Editor — ver y editar datos directamente.
+- **SQL Editor**: para ejecutar queries, migraciones manuales, verificar cron jobs (`select * from cron.job`).
+- **Auth**: pestaña Authentication — usuarios registrados, sesiones activas.
+- **Storage**: pestaña Storage > bucket `respaldos` — archivos de respaldo Excel.
+
+### Edge Functions — Supabase Dashboard
+
+- **Logs**: pestaña Edge Functions > seleccionar función > Logs. Acá aparecen todos los `console.log` y `console.error` de las funciones `generar-informe` y `respaldo-excel`.
+- **Métricas**: misma sección — invocaciones, tiempos de ejecución, errores.
+- **Secrets**: pestaña Edge Functions > Secrets — donde se configuran `ANTHROPIC_API_KEY` y otras variables sensibles.
+
+### Cron de respaldos
+
+El respaldo automático semanal se configura con `pg_cron`. Para verificar:
+
+```sql
+-- Ver cron jobs registrados
+select * from cron.job;
+
+-- Ver historial de ejecuciones
+select * from cron.job_run_details order by start_time desc limit 10;
+
+-- Cambiar frecuencia (ejemplo: diario a las 03:00 UTC)
+select cron.unschedule('respaldo-excel-semanal');
+select cron.schedule('respaldo-excel-semanal', '0 3 * * *', $$ ... $$);
+```
+
 ## Estructura del proyecto
 
 ```
@@ -124,7 +165,7 @@ neuroestima/
 │   └── pages/            # Páginas/rutas
 ├── supabase/
 │   ├── migrations/       # Migraciones SQL versionadas
-│   └── functions/        # Edge Functions (generar-informe)
+│   └── functions/        # Edge Functions (generar-informe, respaldo-excel)
 ├── .env.example          # Template de variables de entorno
 └── vite.config.js
 ```
