@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { especialidadColor, tipoSesionLabel, tiposSesion } from '../lib/especialidades.js'
+import { periodos, filtrarEntradas } from '../lib/filtros.js'
 import EntradaForm from './EntradaForm.jsx'
 import GenerarInforme from './GenerarInforme.jsx'
 
@@ -94,30 +95,9 @@ export default function HistoriaClinica({ pacienteId, paciente }) {
     })
   }
 
-  const periodos = [
-    { key: '1s', label: '1 sem', days: 7 },
-    { key: '1m', label: '1 mes', days: 30 },
-    { key: '3m', label: '3 meses', days: 90 },
-    { key: '6m', label: '6 meses', days: 180 },
-    { key: '1a', label: '1 año', days: 365 },
-    { key: 'todo', label: 'Todo', days: null },
-  ]
-
   const filtradas = useMemo(() => {
-    let resultado = entradas
-    // Filter by period
-    const p = periodos.find((x) => x.key === periodo)
-    if (p && p.days) {
-      const desde = new Date()
-      desde.setDate(desde.getDate() - p.days)
-      desde.setHours(0, 0, 0, 0)
-      resultado = resultado.filter((e) => new Date(e.fecha) >= desde)
-    }
-    // Filter by area
-    if (areasSeleccionadas.length < tiposSesion.length) {
-      resultado = resultado.filter((e) => areasSeleccionadas.includes(e.tipo_sesion))
-    }
-    return resultado
+    const areas = areasSeleccionadas.length < tiposSesion.length ? areasSeleccionadas : null
+    return filtrarEntradas(entradas, periodo, areas)
   }, [entradas, periodo, areasSeleccionadas])
 
   function toggleArea(value) {

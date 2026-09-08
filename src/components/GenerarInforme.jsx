@@ -2,15 +2,7 @@ import { useState, useMemo } from 'react'
 import { supabase } from '../lib/supabase.js'
 import { useAuth } from '../hooks/useAuth.js'
 import { tipoSesionLabel, tiposSesion, especialidadColor } from '../lib/especialidades.js'
-
-const periodos = [
-  { key: '1s', label: '1 semana', days: 7 },
-  { key: '1m', label: '1 mes', days: 30 },
-  { key: '3m', label: '3 meses', days: 90 },
-  { key: '6m', label: '6 meses', days: 180 },
-  { key: '1a', label: '1 año', days: 365 },
-  { key: 'todo', label: 'Todo', days: null },
-]
+import { periodos, filtrarEntradas } from '../lib/filtros.js'
 
 export default function GenerarInforme({ paciente, entradas, onClose }) {
   const { profesional } = useAuth()
@@ -22,18 +14,8 @@ export default function GenerarInforme({ paciente, entradas, onClose }) {
   const [error, setError] = useState(null)
 
   const entradasFiltradas = useMemo(() => {
-    let resultado = entradas
-    const p = periodos.find((x) => x.key === periodoInforme)
-    if (p && p.days) {
-      const desde = new Date()
-      desde.setDate(desde.getDate() - p.days)
-      desde.setHours(0, 0, 0, 0)
-      resultado = resultado.filter((e) => new Date(e.fecha) >= desde)
-    }
-    if (areasInforme.length < tiposSesion.length) {
-      resultado = resultado.filter((e) => areasInforme.includes(e.tipo_sesion))
-    }
-    return resultado
+    const areas = areasInforme.length < tiposSesion.length ? areasInforme : null
+    return filtrarEntradas(entradas, periodoInforme, areas)
   }, [entradas, periodoInforme, areasInforme])
 
   const todasAreasSeleccionadas = areasInforme.length === tiposSesion.length
